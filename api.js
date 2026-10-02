@@ -3,7 +3,7 @@
  * Nenhum dado da viagem fica no código: tudo vem do Apps Script.
  */
 var API = (function () {
-  var APPS_SCRIPT_URL = "__APPS_SCRIPT_URL__";
+  var APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyvf_s24W6gDFzdHkGywYvgH8SpSIqOct3dhxRK3avWWMLz71OKkmCW55K6T9dL065acg/exec";
   var TIMEOUT_MS = 10000;
   var CHAVES = { publico: "o27_publico", privado: "o27_privado", codigo: "o27_codigo", quem: "o27_quem" };
 
