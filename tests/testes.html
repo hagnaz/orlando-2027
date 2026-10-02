@@ -1,0 +1,27 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Testes Orlando 2027</title>
+<style>body{font:14px system-ui;padding:16px}.ok{color:#080}.falha{color:#b00;font-weight:bold}pre{white-space:pre-wrap}</style>
+<h1>Testes</h1>
+<p id="resumo">rodando...</p>
+<div id="saida"></div>
+<script>
+var _passou = 0, _falhou = 0;
+function igual(a, b, msg) {
+  var ja = JSON.stringify(a), jb = JSON.stringify(b);
+  if (ja !== jb) throw new Error((msg || "diferente") + "\n  obtido:   " + ja + "\n  esperado: " + jb);
+}
+function verdade(v, msg) { if (!v) throw new Error(msg || "esperava verdadeiro"); }
+function teste(nome, fn) {
+  var el = document.createElement("pre");
+  try { fn(); _passou++; el.className = "ok"; el.textContent = "OK  " + nome; }
+  catch (e) { _falhou++; el.className = "falha"; el.textContent = "FALHA  " + nome + "\n  " + e.message; }
+  document.getElementById("saida").appendChild(el);
+}
+</script>
+<script src="../apps-script/Logica.js"></script>
+<script src="../logica.js"></script>
+<script src="../apps-script/Seed.js"></script>
+<script src="../apps-script/SeedPrivado.local.js"></script>
+<script src="testes.js"></script>
+<script>document.getElementById("resumo").textContent = _passou + " passaram, " + _falhou + " falharam";</script>

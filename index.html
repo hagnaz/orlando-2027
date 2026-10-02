@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Orlando 2027</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#1f3a68">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <nav class="nav" aria-label="Seções">
+    <div class="nav-marca">Orlando <b>2027</b></div>
+    <a href="#hoje" data-rota="hoje"><span class="ico" aria-hidden="true">☀️</span><span>Hoje</span></a>
+    <a href="#roteiro" data-rota="roteiro"><span class="ico" aria-hidden="true">🗓️</span><span>Roteiro</span></a>
+    <a href="#pendencias" data-rota="pendencias"><span class="ico" aria-hidden="true">✅</span><span>Pendências</span></a>
+    <a href="#reservas" data-rota="reservas"><span class="ico" aria-hidden="true">🔒</span><span>Reservas</span></a>
+  </nav>
+  <div class="principal">
+    <div id="aviso" class="aviso" role="status" hidden></div>
+    <main id="conteudo" class="conteudo" tabindex="-1">
+      <p class="carregando">Carregando…</p>
+    </main>
+  </div>
+</div>
+
+<dialog id="dlg-quem" class="dialogo">
+  <form method="dialog">
+    <h2>Quem é você?</h2>
+    <p class="mudo">Fica salvo neste aparelho, para registrar quem marcou cada pendência.</p>
+    <div id="dlg-quem-opcoes" class="opcoes"></div>
+    <button value="cancelar" class="botao secundario">Cancelar</button>
+  </form>
+</dialog>
+
+<script>
+  if (/[?&]demo=1/.test(location.search)) {
+    document.write('<script src="apps-script/Logica.js"><\/script><script src="apps-script/Seed.js"><\/script><script src="tests/demo.js"><\/script>');
+  }
+</script>
+<script src="logica.js"></script>
+<script src="api.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
