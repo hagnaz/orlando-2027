@@ -59,7 +59,10 @@
     return [
       listaHorarios(d.horarios),
       d.notas ? el("p", { texto: d.notas }) : null,
-      d.restaurante ? el("div", { classe: "restaurante" }, [el("b", { texto: "🍽️ " }), d.restaurante]) : null
+      d.restaurante ? el("div", { classe: "restaurante" }, [el("b", { texto: "🍽️ " }), d.restaurante]) : null,
+      d.links && d.links.length ? el("div", { classe: "links-dia" }, d.links.map(function (l) {
+        return el("a", { classe: "botao pequeno secundario", href: l.url, target: "_blank", rel: "noopener", texto: l.texto + " ↗" });
+      })) : null
     ];
   }
 
@@ -148,7 +151,7 @@
           el("span", { classe: "num", texto: "dia " + S.diaDaViagem(d.data, P.inicio) })
         ]),
         el("div", { classe: "corpo" }, blocoDia(d).concat(
-          !d.horarios && !d.notas && !d.restaurante ? [el("p", { classe: "mudo", texto: "Sem detalhes ainda." })] : []))
+          !d.horarios && !d.notas && !d.restaurante && !(d.links && d.links.length) ? [el("p", { classe: "mudo", texto: "Sem detalhes ainda." })] : []))
       ]);
       if (d.data === h) det.open = true;
       return det;

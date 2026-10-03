@@ -55,12 +55,22 @@ var L = (function () {
     }).filter(Boolean).sort(function (a, b) { return a.data < b.data ? -1 : 1; });
   }
 
+  // Uma linha por link: "texto | https://..."; só https vira link
+  function lerLinks(txt) {
+    return texto(txt).split(/\n/).map(function (l) {
+      var i = l.indexOf("|");
+      if (i < 0) return null;
+      var t = texto(l.slice(0, i)), u = texto(l.slice(i + 1));
+      return t && /^https:\/\/\S+$/.test(u) ? { texto: t, url: u } : null;
+    }).filter(Boolean);
+  }
+
   function montarPublico(abas, agoraIso) {
     var cfg = lerConfig(abas.config);
     var roteiro = linhasParaObjetos(abas.roteiro).map(function (d) {
       return {
         data: normalizarData(d.data), titulo: d.titulo, tipo: d.tipo || "livre",
-        horarios: d.horarios, notas: d.notas, restaurante: d.restaurante
+        horarios: d.horarios, notas: d.notas, restaurante: d.restaurante, links: lerLinks(d.links)
       };
     }).filter(function (d) { return d.data && d.titulo; })
       .sort(function (a, b) { return a.data < b.data ? -1 : a.data > b.data ? 1 : 0; });
@@ -198,7 +208,7 @@ var L = (function () {
   return {
     QUEM_VALIDOS: QUEM_VALIDOS,
     linhaParaObjeto: linhaParaObjeto, linhasParaObjetos: linhasParaObjetos,
-    normalizarData: normalizarData, montarPublico: montarPublico,
+    normalizarData: normalizarData, montarPublico: montarPublico, lerLinks: lerLinks,
     montarPrivado: montarPrivado, validarMarcacao: validarMarcacao,
     lerPessoas: lerPessoas, montarPessoal: montarPessoal, validarGravacao: validarGravacao, proximaOrdem: proximaOrdem, protegerTexto: protegerTexto
   };

@@ -338,3 +338,20 @@ teste("L.protegerTexto: texto que o Sheets leria como fórmula ganha apóstrofo"
   igual(L.protegerTexto("Passaporte"), "Passaporte");
   igual(L.protegerTexto(""), "");
 });
+
+teste("L.lerLinks: 'texto | https://...' por linha; ignora linha sem https ou sem texto", function () {
+  igual(L.lerLinks("Site oficial | https://a.com/x\n\nBlog|https://b.com\nruim | http://c.com\nsem barra https://d.com\n | https://e.com"),
+    [{ texto: "Site oficial", url: "https://a.com/x" }, { texto: "Blog", url: "https://b.com" }]);
+  igual(L.lerLinks(""), []);
+  igual(L.lerLinks(undefined), []);
+});
+
+teste("L.montarPublico leva os links do dia", function () {
+  var a = abasFixture();
+  a.roteiro[0].push("links");
+  a.roteiro[1].push("Mapa | https://maps.google.com/x");
+  var r = L.montarPublico(a, "2026-10-03T10:00:00Z");
+  var epic = r.roteiro.filter(function (d) { return d.data === "2027-01-12"; })[0];
+  igual(epic.links, [{ texto: "Mapa", url: "https://maps.google.com/x" }]);
+  igual(r.roteiro.filter(function (d) { return d.data === "2027-01-11"; })[0].links, []);
+});
