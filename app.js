@@ -7,7 +7,7 @@
   var ICONES_RESERVA = { voo: "✈️", hospedagem: "🏠", carro: "🚐", restaurante: "🍽️", ingresso: "🎟️", seguro: "🩺", outro: "📌" };
   var QUEM = ["Vinicius", "Aline", "Daniel", "Cris", "Bia", "Valen"];
 
-  var estado = { publico: null, privado: null, offlineDesde: null, pessoal: null, pessoalOffline: null, abaRestrita: null, rascunhos: {} };
+  var estado = { verTodas: false, publico: null, privado: null, offlineDesde: null, pessoal: null, pessoalOffline: null, abaRestrita: null, rascunhos: {} };
   var conteudo = document.getElementById("conteudo");
   var aviso = document.getElementById("aviso");
 
@@ -82,7 +82,7 @@
   function telaHoje() {
     var P = estado.publico, h = hoje();
     var situacao = S.estadoViagem(h, P.inicio, P.fim);
-    var ord = S.ordenarPendencias(P.pendencias);
+    var ord = S.ordenarPendencias(S.filtrarPendencias(P.pendencias, API.quem()));
     var esquerda = [], direita = [];
 
     if (situacao === "antes") {
@@ -93,9 +93,9 @@
         el("p", { texto: faltam === 1 ? "dia para a viagem" : "dias para a viagem" }),
         el("p", { classe: "mudo", texto: S.formatarData(P.inicio) + " a " + S.formatarData(P.fim) + " de 2027" })
       ]));
-      var marco = S.proximoMarco(P.marcos, h);
+      var marco = S.proximaData(P.marcos, S.filtrarPendencias(P.pendencias, API.quem()), h);
       if (marco) esquerda.push(el("section", { classe: "cartao" }, [
-        el("div", { classe: "rotulo", texto: "Próximo marco" }),
+        el("div", { classe: "rotulo", texto: marco.pendencia ? "Próximo prazo" : "Próxima data importante" }),
         el("h2", { texto: marco.texto }),
         el("p", { classe: "mudo", texto: S.formatarData(marco.data) + " · em " + S.diasAte(h, marco.data) + " dias" })
       ]));
@@ -128,7 +128,7 @@
     if (situacao !== "depois") {
       var top = ord.abertas.slice(0, 3);
       direita.push(el("section", { classe: "cartao" }, [
-        el("div", { classe: "rotulo", texto: "Pendências mais urgentes" }),
+        el("div", { classe: "rotulo", texto: API.quem() ? "Pendências mais urgentes da sua família" : "Pendências mais urgentes" }),
         top.length ? el("div", null, top.map(function (p) { return itemPendencia(p, h); })) : el("p", { classe: "mudo", texto: "Nada pendente. 🎉" }),
         el("p", { classe: "mudo" }, [ord.abertas.length + " abertas · ", el("a", { href: "#pendencias", texto: "ver todas" })])
       ]));
@@ -178,10 +178,20 @@
   }
 
   function telaPendencias() {
-    var h = hoje(), ord = S.ordenarPendencias(estado.publico.pendencias);
+    var h = hoje(), quem = API.quem();
+    var filtrar = quem && !estado.verTodas;
+    var ord = S.ordenarPendencias(filtrar ? S.filtrarPendencias(estado.publico.pendencias, quem) : estado.publico.pendencias);
+    var filtro = quem ? el("div", { classe: "abas", role: "tablist" }, [
+      ["familia", "Da família " + (S.familiaDe(quem) === "Vinicius" ? "Vinicius e Aline" : "do Daniel")], ["todas", "Todas"]
+    ].map(function (o) {
+      var ativa = (o[0] === "todas") === !filtrar;
+      return el("button", { type: "button", role: "tab", classe: "botao pequeno" + (ativa ? "" : " secundario"), "aria-selected": ativa ? "true" : "false",
+        texto: o[1], onclick: function () { estado.verTodas = o[0] === "todas"; renderizar(); } });
+    })) : null;
     return el("div", null, [
       el("h1", { texto: "Pendências" }),
       el("p", { classe: "mudo", texto: "Toque para marcar como feita (ou desfazer). Para criar ou editar, use a planilha." }),
+      filtro,
       el("div", { classe: "grade" }, [
         el("section", null, [el("h2", { texto: "Abertas (" + ord.abertas.length + ")" })].concat(
           ord.abertas.length ? ord.abertas.map(function (p) { return itemPendencia(p, h); }) : [el("p", { classe: "mudo", texto: "Nada pendente. 🎉" })])),
@@ -505,13 +515,18 @@
 
   function iniciar() {
     esconderAviso();
-    API.buscarPublico().then(function (res) {
-      estado.publico = res.dados;
+    function semCarimbo(d) { var c = {}; Object.keys(d || {}).forEach(function (k) { if (k !== "atualizadoEm") c[k] = d[k]; }); return JSON.stringify(c); }
+    function aplicar(res) {
       if (!res.dados || !res.dados.ok) throw new Error("resposta");
+      var mudou = !estado.publico || semCarimbo(estado.publico) !== semCarimbo(res.dados);
+      estado.publico = res.dados;
       estado.offlineDesde = res.offline ? res.salvoEm : null;
       if (res.offline) mostrarAviso("Sem conexão. Mostrando dados de " + dataHora(res.salvoEm) + ".", true);
-      renderizar();
-    }).catch(function () {
+      else esconderAviso();
+      if (mudou || res.offline) renderizar();
+    }
+    // o segundo aplicar (atualização em segundo plano) só redesenha se algo mudou
+    API.buscarPublico(function (res) { try { aplicar(res); } catch (e) { /* mantém o que está na tela */ } }).then(aplicar).catch(function () {
       if (rotaAtual() === "reservas") return renderizar();
       mostrarTela(el("section", { classe: "cartao" }, [
         el("h2", { texto: "Não deu para carregar" }),

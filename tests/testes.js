@@ -355,3 +355,26 @@ teste("L.montarPublico leva os links do dia", function () {
   igual(epic.links, [{ texto: "Mapa", url: "https://maps.google.com/x" }]);
   igual(r.roteiro.filter(function (d) { return d.data === "2027-01-11"; })[0].links, []);
 });
+
+// ---------- Melhorias 03/10 ----------
+teste("S.familiaDe: chefe de família de cada pessoa", function () {
+  igual(["Vinicius", "Aline", "Daniel", "Cris", "Bia", "Valen", "", null].map(S.familiaDe),
+    ["Vinicius", "Vinicius", "Daniel", "Daniel", "Daniel", "Daniel", "", ""]);
+});
+
+teste("S.filtrarPendencias: família vê as suas e as de Ambos; sem quem vê tudo", function () {
+  var l = [{ id: "a", responsavel: "Vinicius" }, { id: "b", responsavel: "Daniel" }, { id: "c", responsavel: "Ambos" }];
+  igual(S.filtrarPendencias(l, "Aline").map(function (p) { return p.id; }), ["a", "c"]);
+  igual(S.filtrarPendencias(l, "Valen").map(function (p) { return p.id; }), ["b", "c"]);
+  igual(S.filtrarPendencias(l, null).length, 3);
+});
+
+teste("S.proximaData: o mais cedo entre marcos futuros e prazos de pendências abertas", function () {
+  var marcos = [{ data: "2026-10-20", texto: "Ingressos" }, { data: "2026-09-01", texto: "passado" }];
+  var pend = [{ id: "p1", item: "Cotação minivan", prazo: "2026-10-09", status: "aberta" },
+    { id: "p2", item: "Feita", prazo: "2026-10-05", status: "feita" },
+    { id: "p3", item: "Sem prazo", prazo: "", status: "aberta" }];
+  igual(S.proximaData(marcos, pend, "2026-10-03"), { data: "2026-10-09", texto: "Cotação minivan", pendencia: true });
+  igual(S.proximaData(marcos, pend, "2026-10-10"), { data: "2026-10-20", texto: "Ingressos", pendencia: false });
+  igual(S.proximaData([], [], "2026-10-10"), null);
+});

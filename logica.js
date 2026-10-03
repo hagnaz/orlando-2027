@@ -46,6 +46,27 @@ var S = (function () {
     return futuros.length ? futuros[0] : null;
   }
 
+  var FAMILIA = { Vinicius: "Vinicius", Aline: "Vinicius", Daniel: "Daniel", Cris: "Daniel", Bia: "Daniel", Valen: "Daniel" };
+
+  function familiaDe(quem) { return FAMILIA[quem] || ""; }
+
+  // Pendências da família de quem (responsável = chefe da família ou Ambos); sem quem, todas
+  function filtrarPendencias(lista, quem) {
+    var f = familiaDe(quem);
+    if (!f) return lista.slice();
+    return lista.filter(function (p) { return p.responsavel === f || p.responsavel === "Ambos"; });
+  }
+
+  // Data mais próxima entre marcos e prazos de pendências abertas
+  function proximaData(marcos, pendencias, hojeIso) {
+    var cands = marcos.filter(function (m) { return m.data >= hojeIso; })
+      .map(function (m) { return { data: m.data, texto: m.texto, pendencia: false }; })
+      .concat(pendencias.filter(function (p) { return p.status !== "feita" && p.prazo && p.prazo >= hojeIso; })
+        .map(function (p) { return { data: p.prazo, texto: p.item, pendencia: true }; }));
+    cands.sort(function (a, b) { return a.data < b.data ? -1 : a.data > b.data ? 1 : 0; });
+    return cands.length ? cands[0] : null;
+  }
+
   function formatarData(iso) {
     if (!iso) return "";
     var d = new Date(paraUtc(iso));
@@ -75,6 +96,6 @@ var S = (function () {
     diasAte: diasAte, estadoViagem: estadoViagem, diaDaViagem: diaDaViagem,
     somarDias: somarDias, ordenarPendencias: ordenarPendencias,
     proximoMarco: proximoMarco, formatarData: formatarData, hojeIso: hojeIso,
-    agruparItens: agruparItens
+    agruparItens: agruparItens, familiaDe: familiaDe, filtrarPendencias: filtrarPendencias, proximaData: proximaData
   };
 })();

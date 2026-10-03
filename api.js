@@ -4,7 +4,7 @@
  */
 var API = (function () {
   var APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyvf_s24W6gDFzdHkGywYvgH8SpSIqOct3dhxRK3avWWMLz71OKkmCW55K6T9dL065acg/exec";
-  var TIMEOUT_MS = 10000;
+  var TIMEOUT_MS = 25000;
   var CHAVES = { publico: "o27_publico", privado: "o27_privado", codigo: "o27_codigo", quem: "o27_quem", pessoal: "o27_pessoal" };
 
   function ler(chave) {
@@ -44,9 +44,21 @@ var API = (function () {
     });
   }
 
-  function buscarPublico() {
+  // Com algo salvo: devolve o salvo na hora e atualiza em segundo plano (aoAtualizar recebe o resultado).
+  // Assim o servidor lento na primeira chamada do dia não vira "sem conexão".
+  function buscarPublico(aoAtualizar) {
     if (demo()) return Promise.resolve({ dados: DEMO.publico, offline: false });
-    return comCache(CHAVES.publico, APPS_SCRIPT_URL + "?acao=publico");
+    var url = APPS_SCRIPT_URL + "?acao=publico";
+    var c = ler(CHAVES.publico);
+    if (!c || !c.dados || !c.dados.ok) return comCache(CHAVES.publico, url);
+    buscar(url).then(function (dados) {
+      if (!dados || !dados.ok) return;
+      gravar(CHAVES.publico, { salvoEm: new Date().toISOString(), dados: dados });
+      if (aoAtualizar) aoAtualizar({ dados: dados, offline: false });
+    }).catch(function () {
+      if (aoAtualizar) aoAtualizar({ dados: c.dados, offline: true, salvoEm: c.salvoEm });
+    });
+    return Promise.resolve({ dados: c.dados, offline: false, doCache: true });
   }
 
   function buscarPrivado(codigo) {
