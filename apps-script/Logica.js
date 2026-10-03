@@ -175,6 +175,9 @@ var L = (function () {
     return { ok: false, erro: "id" };
   }
 
+  // setValues interpreta "=", "+", "-" e "@" no início como fórmula mesmo com formato texto
+  function protegerTexto(v) { return /^[=+\-@]/.test(v) ? "'" + v : v; }
+
   function proximaOrdem(itensLinhas, pessoa) {
     var max = 0;
     itensLinhas.forEach(function (i) { if (i.pessoa === pessoa && +i.ordem > max) max = +i.ordem; });
@@ -197,6 +200,6 @@ var L = (function () {
     linhaParaObjeto: linhaParaObjeto, linhasParaObjetos: linhasParaObjetos,
     normalizarData: normalizarData, montarPublico: montarPublico,
     montarPrivado: montarPrivado, validarMarcacao: validarMarcacao,
-    lerPessoas: lerPessoas, montarPessoal: montarPessoal, validarGravacao: validarGravacao, proximaOrdem: proximaOrdem
+    lerPessoas: lerPessoas, montarPessoal: montarPessoal, validarGravacao: validarGravacao, proximaOrdem: proximaOrdem, protegerTexto: protegerTexto
   };
 })();

@@ -329,3 +329,12 @@ teste("Códigos pessoais não aparecem em nenhum arquivo público", function () 
   var publico = JSON.stringify(SEED_PUBLICO) + JSON.stringify(SP.itensIniciais());
   L.lerPessoas(SEED_CODIGOS).forEach(function (x) { verdade(publico.indexOf(x.codigo) < 0); });
 });
+
+teste("L.protegerTexto: texto que o Sheets leria como fórmula ganha apóstrofo", function () {
+  igual(L.protegerTexto("=teste"), "'=teste");
+  igual(L.protegerTexto("+55 11"), "'+55 11");
+  igual(L.protegerTexto("-5 dólares"), "'-5 dólares");
+  igual(L.protegerTexto("@hector"), "'@hector");
+  igual(L.protegerTexto("Passaporte"), "Passaporte");
+  igual(L.protegerTexto(""), "");
+});

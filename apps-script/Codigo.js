@@ -93,7 +93,7 @@ function gravarPessoal_(corpo) {
       var item = { id: "i" + new Date().getTime(), pessoa: v.pessoa, categoria: v.categoria, texto: v.texto, feito: "", ordem: String(L.proximaOrdem(linhas, v.pessoa)) };
       var rng = shI.getRange(shI.getLastRow() + 1, 1, 1, cab.length);
       rng.setNumberFormat("@");
-      rng.setValues([cab.map(function (k) { return item[k] !== undefined ? item[k] : ""; })]);
+      rng.setValues([cab.map(function (k) { return item[k] !== undefined ? L.protegerTexto(item[k]) : ""; })]);
       return { ok: true, item: { id: item.id, categoria: item.categoria, texto: item.texto, feito: false, ordem: +item.ordem } };
     }
     // nota_salvar
@@ -104,14 +104,14 @@ function gravarPessoal_(corpo) {
     for (var i = 1; i < nv.length; i++) if (nv[i][0] === v.pessoa) { n = i + 1; break; }
     var r = shN.getRange(n, 1, 1, 3);
     r.setNumberFormat("@");
-    r.setValues([[v.pessoa, v.texto, salvoEm]]);
+    r.setValues([[v.pessoa, L.protegerTexto(v.texto), salvoEm]]);
     return { ok: true, nota: { texto: v.texto, salvo_em: salvoEm } };
   } finally {
     lock.releaseLock();
   }
 }
 
-// "@" antes de gravar: texto começando com "=" ou "+" não vira fórmula
+// "@" antes de gravar: valor simples não vira número nem data
 function textoNaCelula_(rng, valor) { rng.setNumberFormat("@"); rng.setValue(valor); }
 
 function lerAbas_() {
