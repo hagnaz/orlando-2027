@@ -4,7 +4,7 @@
 (function () {
   var FUSO = "America/New_York";
   var ICONES = { parque: "🎢", descanso: "🏖️", viagem: "✈️", livre: "🛍️" };
-  var ICONES_RESERVA = { voo: "✈️", hospedagem: "🏠", carro: "🚐", restaurante: "🍽️", ingresso: "🎟️", outro: "📌" };
+  var ICONES_RESERVA = { voo: "✈️", hospedagem: "🏠", carro: "🚐", restaurante: "🍽️", ingresso: "🎟️", seguro: "🩺", outro: "📌" };
   var QUEM = ["Vinicius", "Aline", "Daniel", "Cris", "Bia", "Valen"];
 
   var estado = { publico: null, privado: null, offlineDesde: null };
