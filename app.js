@@ -7,7 +7,7 @@
   var ICONES_RESERVA = { voo: "✈️", hospedagem: "🏠", carro: "🚐", restaurante: "🍽️", ingresso: "🎟️", seguro: "🩺", outro: "📌" };
   var QUEM = ["Vinicius", "Aline", "Daniel", "Cris", "Bia", "Valen"];
 
-  var estado = { publico: null, privado: null, offlineDesde: null };
+  var estado = { publico: null, privado: null, offlineDesde: null, pessoal: null, pessoalOffline: null, abaRestrita: null, rascunhos: {} };
   var conteudo = document.getElementById("conteudo");
   var aviso = document.getElementById("aviso");
 
@@ -236,7 +236,7 @@
 
   // ---------- Reservas ----------
   function formCodigo(erro) {
-    var input = el("input", { type: "text", autocomplete: "off", autocapitalize: "none", spellcheck: "false", placeholder: "Código do grupo", "aria-label": "Código do grupo" });
+    var input = el("input", { type: "text", autocomplete: "off", autocapitalize: "none", spellcheck: "false", placeholder: "Seu código", "aria-label": "Seu código" });
     var msg = el("p", { classe: "erro-texto", texto: erro || "" });
     msg.hidden = !erro;
     var form = el("form", { classe: "form-codigo", onsubmit: function (ev) {
@@ -248,9 +248,9 @@
     } }, [input, el("button", { classe: "botao", type: "submit", texto: "Entrar" })]);
     setTimeout(function () { input.focus(); }, 0);
     return el("div", null, [
-      el("h1", { texto: "Reservas 🔒" }),
+      el("h1", { texto: "Área restrita 🔒" }),
       el("section", { classe: "cartao" }, [
-        el("p", { texto: "Esta parte tem códigos de reserva, bilhetes e endereço. Digite o código do grupo (está no grupo do WhatsApp)." }),
+        el("p", { texto: "Aqui ficam reservas, contatos e a sua área pessoal (checklist e notas). Digite o seu código pessoal." }),
         form, msg
       ])
     ]);
@@ -281,37 +281,191 @@
     return el("section", { classe: "cartao reserva" }, filhos);
   }
 
-  function telaReservas() {
-    var R = estado.privado;
+  function blocoGrupo(R) {
     return el("div", null, [
-      el("h1", { texto: "Reservas 🔒" }),
       el("div", { classe: "grade" }, R.reservas.map(cartaoReserva)),
       R.contatos.length ? el("section", { classe: "cartao", style: "margin-top:14px" }, [
         el("h2", { texto: "Contatos" }),
         el("ul", { classe: "contatos" }, R.contatos.map(function (c) { return el("li", null, [el("b", { texto: c.nome }), ": " + c.valor]); }))
-      ]) : null,
+      ]) : null
+    ]);
+  }
+
+  function telaRestrita() {
+    var R = estado.privado, P = estado.pessoal;
+    var abas = [{ id: "grupo", nome: "Grupo" }];
+    if (P) P.areas.forEach(function (a) { abas.push({ id: a.pessoa, nome: a.editavel ? "Minha área" : a.pessoa }); });
+    var existe = abas.some(function (x) { return x.id === estado.abaRestrita; });
+    var atual = existe ? estado.abaRestrita : (P ? P.eu : "grupo");
+    var area = P && P.areas.filter(function (a) { return a.pessoa === atual; })[0];
+    return el("div", null, [
+      el("h1", { texto: "Área restrita 🔒" }),
+      P ? el("p", { classe: "mudo", texto: "Você entrou como " + P.eu + "." })
+        : el("p", { classe: "mudo", texto: "Você entrou com o código do grupo. Peça seu código pessoal ao Vinicius para ter sua área." }),
+      abas.length > 1 ? el("div", { classe: "abas", role: "tablist" }, abas.map(function (x) {
+        return el("button", { type: "button", role: "tab", classe: "botao pequeno" + (x.id === atual ? "" : " secundario"),
+          "aria-selected": x.id === atual ? "true" : "false", texto: x.nome,
+          onclick: function () { estado.abaRestrita = x.id; renderizar(); } });
+      })) : null,
+      area ? telaArea(area) : blocoGrupo(R),
       el("p", null, [el("button", { type: "button", classe: "botao pequeno secundario", texto: "Sair deste aparelho", onclick: function () {
-        API.esquecerCodigo(); estado.privado = null; renderizar();
+        API.esquecerCodigo();
+        estado.privado = null; estado.pessoal = null; estado.abaRestrita = null; estado.rascunhos = {};
+        renderizar();
       } })])
     ]);
   }
 
+  function falhaGravacao(botao) {
+    return function (e) {
+      if (botao) { botao.removeAttribute("aria-busy"); botao.disabled = false; }
+      if (e && e.codigo === "codigo") {
+        API.esquecerCodigo();
+        estado.privado = null; estado.pessoal = null;
+        return mostrarTela(formCodigo("Seu código mudou. Peça o novo ao Vinicius."));
+      }
+      if (e && e.codigo === "id") {
+        mostrarAviso("Esse item mudou na planilha. Atualizei a lista.", false, "erro");
+        return carregarPrivado(API.codigo(), false);
+      }
+      mostrarAviso("Não deu para salvar. Tente de novo com internet.", false, "erro");
+    };
+  }
+
+  function salvou() { API.atualizarCachePessoal(estado.pessoal); esconderAviso(); renderizar(); }
+
+  function semConexao() {
+    if (!estado.pessoalOffline) return false;
+    mostrarAviso("Sem conexão: não dá para salvar agora.", true, "erro");
+    return true;
+  }
+
+  function itemChecklist(i, area, podeEditar) {
+    var marcar = el("button", { type: "button", classe: "pendencia" + (i.feito ? " feita" : ""), "aria-pressed": i.feito ? "true" : "false" }, [
+      el("span", { classe: "caixa", "aria-hidden": "true", texto: i.feito ? "✓" : "" }),
+      el("span", { classe: "item", texto: i.texto })
+    ]);
+    var li = el("li", { classe: "item-check" }, [marcar]);
+    if (!podeEditar) { marcar.disabled = true; return li; }
+    marcar.addEventListener("click", function () {
+      if (semConexao()) return;
+      var novo = !i.feito;
+      marcar.setAttribute("aria-busy", "true"); marcar.disabled = true;
+      API.gravarPessoal("item_marcar", { id: i.id, feito: novo }).then(function () { i.feito = novo; salvou(); }).catch(falhaGravacao(marcar));
+    });
+    var apagar = el("button", { type: "button", classe: "apagar", "aria-label": "Apagar " + i.texto, texto: "×" });
+    apagar.addEventListener("click", function () {
+      if (apagar.getAttribute("data-confirmar") !== "1") {
+        apagar.setAttribute("data-confirmar", "1"); apagar.textContent = "Apagar?";
+        setTimeout(function () { if (apagar.isConnected) { apagar.removeAttribute("data-confirmar"); apagar.textContent = "×"; } }, 3000);
+        return;
+      }
+      if (semConexao()) return;
+      apagar.disabled = true;
+      API.gravarPessoal("item_apagar", { id: i.id }).then(function () {
+        area.itens = area.itens.filter(function (x) { return x.id !== i.id; });
+        salvou();
+      }).catch(falhaGravacao(apagar));
+    });
+    li.appendChild(apagar);
+    return li;
+  }
+
+  function formNovoItem(area, grupos) {
+    var cats = grupos.map(function (g) { return g.categoria; });
+    if (cats.indexOf("Outros") < 0) cats.push("Outros");
+    var sel = el("select", { "aria-label": "Categoria" }, cats.map(function (c) { return el("option", { value: c, texto: c }); }));
+    var input = el("input", { type: "text", maxlength: "200", placeholder: "Novo item", "aria-label": "Novo item" });
+    var botao = el("button", { classe: "botao", type: "submit", texto: "Acrescentar" });
+    return el("form", { classe: "cartao form-item", onsubmit: function (ev) {
+      ev.preventDefault();
+      var t = input.value.trim();
+      if (!t || botao.disabled || semConexao()) return;
+      botao.disabled = true;
+      API.gravarPessoal("item_novo", { texto: t, categoria: sel.value }).then(function (r) { area.itens.push(r.item); salvou(); }).catch(falhaGravacao(botao));
+    } }, [sel, input, botao]);
+  }
+
+  function fmtSalvo(s) {
+    var m = (s || "").match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}:\d{2})/);
+    return m ? "salvo em " + m[3] + "/" + m[2] + " às " + m[4] : "";
+  }
+
+  function blocoNota(area, podeEditar) {
+    var rascunho = estado.rascunhos[area.pessoa];
+    var ta = el("textarea", { rows: "6", maxlength: "5000", "aria-label": area.editavel ? "Minhas notas" : "Notas de " + area.pessoa });
+    ta.value = rascunho !== undefined ? rascunho : (area.nota.texto || "");
+    ta.readOnly = !podeEditar;
+    ta.addEventListener("input", function () { estado.rascunhos[area.pessoa] = ta.value; });
+    var status = el("span", { classe: "mudo", texto: rascunho !== undefined ? "não salvo" : fmtSalvo(area.nota.salvo_em) });
+    var filhos = [el("h2", { texto: area.editavel ? "Minhas notas" : "Notas de " + area.pessoa }), ta];
+    if (podeEditar) {
+      var b = el("button", { type: "button", classe: "botao", texto: "Salvar" });
+      b.addEventListener("click", function () {
+        if (semConexao()) return;
+        b.disabled = true;
+        API.gravarPessoal("nota_salvar", { texto: ta.value }).then(function (r) {
+          area.nota = r.nota;
+          delete estado.rascunhos[area.pessoa];
+          salvou();
+        }).catch(falhaGravacao(b));
+      });
+      filhos.push(el("div", { classe: "linha-nota" }, [b, status]));
+    } else filhos.push(status);
+    return el("section", { classe: "cartao nota" }, filhos);
+  }
+
+  function telaArea(area) {
+    var podeEditar = area.editavel && !estado.pessoalOffline;
+    var grupos = S.agruparItens(area.itens);
+    var feitos = area.itens.filter(function (i) { return i.feito; }).length;
+    var filhos = [el("h2", { texto: (area.editavel ? "Meu checklist" : "Checklist de " + area.pessoa) + " · " + feitos + "/" + area.itens.length })];
+    if (!area.editavel) filhos.push(el("p", { classe: "mudo", texto: "Só leitura." }));
+    grupos.forEach(function (g) {
+      filhos.push(el("section", { classe: "cartao checklist" }, [
+        el("h3", { texto: g.categoria + " · " + g.feitos + "/" + g.itens.length }),
+        el("ul", { classe: "itens" }, g.itens.map(function (i) { return itemChecklist(i, area, podeEditar); }))
+      ]));
+    });
+    if (podeEditar) filhos.push(formNovoItem(area, grupos));
+    filhos.push(blocoNota(area, podeEditar));
+    return el("div", { classe: "area" }, filhos);
+  }
+
   function carregarPrivado(codigo, digitado) {
     conteudo.textContent = "";
-    conteudo.appendChild(el("p", { classe: "carregando", texto: "Abrindo reservas…" }));
-    API.buscarPrivado(codigo).then(function (res) {
-      if (res.dados && res.dados.ok) {
-        API.salvarCodigo(codigo);
-        estado.privado = res.dados;
-        if (res.offline) mostrarAviso("Sem conexão. Reservas de " + dataHora(res.salvoEm) + ".", true);
-        renderizar();
-      } else {
+    conteudo.appendChild(el("p", { classe: "carregando", texto: "Abrindo área restrita…" }));
+    function entrouPessoal(res) {
+      API.salvarCodigo(codigo);
+      API.salvarQuem(res.dados.eu);
+      estado.pessoal = res.dados;
+      estado.privado = { reservas: res.dados.reservas, contatos: res.dados.contatos };
+      estado.pessoalOffline = res.offline ? res.salvoEm : null;
+      if (res.offline) mostrarAviso("Sem conexão. Área restrita de " + dataHora(res.salvoEm) + ". Para marcar ou salvar, conecte-se.", true);
+      renderizar();
+    }
+    function tentarGrupo() {
+      return API.buscarPrivado(codigo).then(function (res) {
+        if (res.dados && res.dados.ok) {
+          API.salvarCodigo(codigo);
+          estado.pessoal = null;
+          estado.privado = res.dados;
+          if (res.offline) mostrarAviso("Sem conexão. Reservas de " + dataHora(res.salvoEm) + ".", true);
+          return renderizar();
+        }
         if (!digitado) API.esquecerCodigo();
         estado.privado = null;
+        estado.pessoal = null;
         mostrarTela(formCodigo("Código incorreto."));
-      }
+      });
+    }
+    API.buscarPessoal(codigo).then(function (res) {
+      if (res.dados && res.dados.ok) return entrouPessoal(res);
+      return tentarGrupo();
     }).catch(function () {
-      mostrarTela(formCodigo("Sem conexão. Conecte-se para abrir as reservas pela primeira vez."));
+      return tentarGrupo();
+    }).catch(function () {
+      mostrarTela(formCodigo("Sem conexão. Conecte-se para abrir a área restrita pela primeira vez."));
     });
   }
 
@@ -333,7 +487,7 @@
       if (a.getAttribute("data-rota") === rota) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
     });
     if (rota === "reservas") {
-      if (estado.privado) mostrarTela(telaReservas());
+      if (estado.privado) mostrarTela(telaRestrita());
       else if (API.codigo()) return carregarPrivado(API.codigo(), false);
       else mostrarTela(formCodigo());
       return;
