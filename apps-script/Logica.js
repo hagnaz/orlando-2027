@@ -86,20 +86,99 @@ var L = (function () {
     return e !== "" && e === r;
   }
 
-  function montarPrivado(abas, codigo) {
-    var cfg = lerConfig(abas.config);
-    if (!codigoConfere(cfg.codigo_grupo, codigo)) return { ok: false, erro: "codigo" };
+  var ACOES_PESSOAIS = ["item_marcar", "item_novo", "item_apagar", "nota_salvar"];
+  var LIMITES = { texto: 200, categoria: 40, nota: 5000 };
 
+  function montarGrupo(abas) {
     var reservas = linhasParaObjetos(abas.reservas).filter(function (r) { return r.titulo; })
       .sort(function (a, b) { return (+a.ordem || 999) - (+b.ordem || 999); });
-
     var contatos = [];
     linhasParaObjetos(abas.config).forEach(function (l) {
       if (l.chave.indexOf("contato_") === 0 && l.valor) {
         contatos.push({ nome: l.chave.slice(8).replace(/_/g, " "), valor: l.valor });
       }
     });
-    return { ok: true, reservas: reservas, contatos: contatos };
+    return { reservas: reservas, contatos: contatos };
+  }
+
+  function montarPrivado(abas, codigo) {
+    var cfg = lerConfig(abas.config);
+    if (!codigoConfere(cfg.codigo_grupo, codigo)) return { ok: false, erro: "codigo" };
+    var g = montarGrupo(abas);
+    return { ok: true, reservas: g.reservas, contatos: g.contatos };
+  }
+
+  function lerPessoas(valores) {
+    return linhasParaObjetos(valores).filter(function (p) { return p.pessoa; }).map(function (p) {
+      return { pessoa: p.pessoa, codigo: p.codigo, ve: texto(p.ve).split(",").map(texto).filter(Boolean) };
+    });
+  }
+
+  function pessoaDoCodigo(pessoas, codigo) {
+    for (var i = 0; i < pessoas.length; i++) if (codigoConfere(pessoas[i].codigo, codigo)) return pessoas[i];
+    return null;
+  }
+
+  function marcadoComoFeito(v) { return ["sim", "x", "true", "1", "feito"].indexOf(texto(v).toLowerCase()) >= 0; }
+
+  function itensDe(valores, pessoa) {
+    return linhasParaObjetos(valores).filter(function (i) { return i.id && i.texto && i.pessoa === pessoa; })
+      .map(function (i) {
+        return { id: i.id, categoria: i.categoria || "Outros", texto: i.texto, feito: marcadoComoFeito(i.feito), ordem: +i.ordem || 0 };
+      }).sort(function (a, b) { return a.ordem - b.ordem; });
+  }
+
+  function notaDe(valores, pessoa) {
+    var n = linhasParaObjetos(valores).filter(function (l) { return l.pessoa === pessoa; })[0];
+    return { texto: n ? n.texto : "", salvo_em: n ? n.salvo_em : "" };
+  }
+
+  function montarPessoal(abas, codigo) {
+    var pessoas = lerPessoas(abas.pessoas);
+    var eu = pessoaDoCodigo(pessoas, codigo);
+    if (!eu) return { ok: false, erro: "codigo" };
+    var nomes = pessoas.map(function (p) { return p.pessoa; });
+    var visiveis = [eu.pessoa];
+    eu.ve.forEach(function (n) { if (nomes.indexOf(n) >= 0 && visiveis.indexOf(n) < 0) visiveis.push(n); });
+    var g = montarGrupo(abas);
+    return {
+      ok: true, eu: eu.pessoa, reservas: g.reservas, contatos: g.contatos,
+      areas: visiveis.map(function (n) {
+        return { pessoa: n, editavel: n === eu.pessoa, itens: itensDe(abas.itens, n), nota: notaDe(abas.notas, n) };
+      })
+    };
+  }
+
+  function validarGravacao(pessoas, itensLinhas, corpo) {
+    var c = corpo || {};
+    var eu = pessoaDoCodigo(pessoas, c.codigo);
+    if (!eu) return { ok: false, erro: "codigo" };
+    if (ACOES_PESSOAIS.indexOf(c.acao) < 0) return { ok: false, erro: "acao" };
+    if (c.acao === "nota_salvar") {
+      var nota = c.texto === undefined || c.texto === null ? "" : String(c.texto);
+      if (nota.length > LIMITES.nota) return { ok: false, erro: "tamanho" };
+      return { ok: true, pessoa: eu.pessoa, texto: nota };
+    }
+    if (c.acao === "item_novo") {
+      var t = texto(c.texto), cat = texto(c.categoria) || "Outros";
+      if (!t || t.length > LIMITES.texto || cat.length > LIMITES.categoria) return { ok: false, erro: "tamanho" };
+      return { ok: true, pessoa: eu.pessoa, texto: t, categoria: cat };
+    }
+    var id = texto(c.id);
+    if (!id) return { ok: false, erro: "id" };
+    for (var i = 0; i < itensLinhas.length; i++) {
+      if (itensLinhas[i].id === id) {
+        if (itensLinhas[i].pessoa !== eu.pessoa) return { ok: false, erro: "permissao" };
+        return { ok: true, pessoa: eu.pessoa, indice: i, feito: c.feito === true };
+      }
+    }
+    return { ok: false, erro: "id" };
+  }
+
+  function proximaOrdem(itensLinhas, pessoa) {
+    var max = 0;
+    itensLinhas.forEach(function (i) { if (i.pessoa === pessoa && +i.ordem > max) max = +i.ordem; });
+    return max + 1;
   }
 
   function validarMarcacao(pendencias, id, status, quem) {
@@ -117,6 +196,7 @@ var L = (function () {
     QUEM_VALIDOS: QUEM_VALIDOS,
     linhaParaObjeto: linhaParaObjeto, linhasParaObjetos: linhasParaObjetos,
     normalizarData: normalizarData, montarPublico: montarPublico,
-    montarPrivado: montarPrivado, validarMarcacao: validarMarcacao
+    montarPrivado: montarPrivado, validarMarcacao: validarMarcacao,
+    lerPessoas: lerPessoas, montarPessoal: montarPessoal, validarGravacao: validarGravacao, proximaOrdem: proximaOrdem
   };
 })();

@@ -60,9 +60,21 @@ var S = (function () {
     }).format(agora);
   }
 
+  function agruparItens(itens) {
+    var grupos = [], porNome = {};
+    (itens || []).slice().sort(function (a, b) { return a.ordem - b.ordem; }).forEach(function (i) {
+      var g = porNome[i.categoria];
+      if (!g) { g = porNome[i.categoria] = { categoria: i.categoria, itens: [], feitos: 0 }; grupos.push(g); }
+      g.itens.push(i);
+      if (i.feito) g.feitos++;
+    });
+    return grupos;
+  }
+
   return {
     diasAte: diasAte, estadoViagem: estadoViagem, diaDaViagem: diaDaViagem,
     somarDias: somarDias, ordenarPendencias: ordenarPendencias,
-    proximoMarco: proximoMarco, formatarData: formatarData, hojeIso: hojeIso
+    proximoMarco: proximoMarco, formatarData: formatarData, hojeIso: hojeIso,
+    agruparItens: agruparItens
   };
 })();
