@@ -56,7 +56,7 @@ Setup único: `configurarPessoal()` cria as 3 abas se não existirem, preenche `
 ## Site
 
 - A aba "Reservas 🔒" vira "Área restrita 🔒". Pede o código pessoal; aceita também o código do grupo durante a migração (nesse caso mostra só a parte do grupo, com um aviso).
-- Com código pessoal: reservas e contatos do grupo, e abaixo a área pessoal com abas "Minha" e uma por pessoa visível.
+- Com código pessoal: sub-abas "Grupo" (reservas e contatos), "Minha área" e uma por pessoa visível; abre em "Minha área".
 - Checklist agrupado por categoria com contagem (`Documentos 3/5`). Marcar, acrescentar (campo + categoria) e apagar só na área própria.
 - Nota: caixa de texto, botão Salvar, "salvo às HH:mm".
 - O código pessoal define "quem sou eu"; a pergunta "quem é você" das pendências deixa de aparecer para quem entrou.
