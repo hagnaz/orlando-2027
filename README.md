@@ -26,12 +26,17 @@ Tudo pela planilha **Orlando 2027 - Site**:
 - `reservas` (privada): `ordem` define a posição; `codigo` ganha botão de copiar; `endereco` ganha link do Maps.
 - `config`: `marcos` no formato `AAAA-MM-DD;texto|AAAA-MM-DD;texto`; `codigo_grupo` é o código das reservas; linhas `contato_*` aparecem como contatos (privados).
 
+- `pessoas` (privada): `pessoa`, `codigo` (código pessoal), `ve` (quem a pessoa enxerga, separado por vírgula). Trocar o código de alguém = editar esta coluna.
+- `itens`: checklist de cada pessoa (`feito` = sim ou vazio). Pode editar à mão.
+- `notas`: uma nota por pessoa.
+- Para desligar o código do grupo depois que todos tiverem o código pessoal, apague a linha `codigo_grupo` da aba `config`.
+
 **Nunca** coloque código de reserva, bilhete, endereço ou telefone nas abas `roteiro` e `pendencias`: elas são públicas.
 
 ## Publicar o Apps Script (uma vez)
 
 1. https://script.google.com → **Novo projeto** → nome "Orlando 2027 - Site".
-2. Apague o conteúdo de `Código.gs` e cole **inteiro** o arquivo local `apps-script/COLAR-NO-APPS-SCRIPT.local.js`. Salvar.
+2. Apague o conteúdo de `Código.gs` e cole **inteiro** o arquivo local `apps-script/COLAR-NO-APPS-SCRIPT.local.js` (gerado juntando Logica, Seed, SeedPessoal, SeedPrivado.local, SeedCodigos.local e Codigo). Salvar. Para a área pessoal, rode também `configurarPessoal`.
 3. No menu de funções escolha **configurar** → **Executar** → autorizar. O registro mostra o link da planilha criada.
 4. **Implantar → Nova implantação → App da Web**. Executar como: **Eu**. Quem pode acessar: **Qualquer pessoa**. Implantar e copiar a URL que termina em `/exec`.
 5. A URL entra em `api.js` no lugar de `__APPS_SCRIPT_URL__`.
