@@ -303,3 +303,29 @@ teste("S.agruparItens agrupa por categoria na ordem e conta feitos", function ()
   igual(g.map(function (x) { return [x.categoria, x.itens.length, x.feitos]; }), [["Docs", 2, 1], ["Saúde", 1, 1]]);
   igual(S.agruparItens([]), []);
 });
+
+teste("SP.itensIniciais: todas as pessoas, ids únicos, extras em categorias existentes", function () {
+  var m = SP.itensIniciais();
+  igual(m[0], ["id", "pessoa", "categoria", "texto", "feito", "ordem"]);
+  var linhas = m.slice(1), ids = {};
+  SP.PESSOAS.forEach(function (p) {
+    verdade(linhas.some(function (l) { return l[1] === p; }), "sem itens: " + p);
+  });
+  linhas.forEach(function (l) { verdade(!ids[l[0]], "id repetido " + l[0]); ids[l[0]] = 1; });
+  verdade(linhas.some(function (l) { return l[1] === "Bia" && /Autorização/.test(l[3]); }));
+  verdade(!linhas.some(function (l) { return l[1] !== "Vinicius" && /Mounjaro/.test(l[3]); }));
+  linhas.forEach(function (l) { verdade(l[3].length <= 200 && l[2].length <= 40); });
+});
+
+teste("SEED_CODIGOS: 6 pessoas, códigos únicos e não vazios, visibilidade da spec", function () {
+  var p = L.lerPessoas(SEED_CODIGOS);
+  igual(p.map(function (x) { return x.pessoa; }), SP.PESSOAS);
+  var cods = p.map(function (x) { return x.codigo.toLowerCase(); });
+  cods.forEach(function (c, i) { verdade(c.length >= 8 && cods.indexOf(c) === i, "código fraco ou repetido"); });
+  igual(p.map(function (x) { return x.ve.join(","); }), ["Aline", "Vinicius", "Cris,Bia,Valen", "Daniel,Bia,Valen", "", ""]);
+});
+
+teste("Códigos pessoais não aparecem em nenhum arquivo público", function () {
+  var publico = JSON.stringify(SEED_PUBLICO) + JSON.stringify(SP.itensIniciais());
+  L.lerPessoas(SEED_CODIGOS).forEach(function (x) { verdade(publico.indexOf(x.codigo) < 0); });
+});
