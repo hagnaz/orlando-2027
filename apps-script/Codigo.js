@@ -14,7 +14,7 @@
  */
 
 var PLANILHA_NOME = "Orlando 2027 - Site";
-var ABAS = ["roteiro", "pendencias", "reservas", "config", "pessoas", "itens", "notas"];
+var ABAS = ["roteiro", "pendencias", "reservas", "config", "pessoas", "itens", "notas", "blocos"];
 
 function doGet(e) {
   try {

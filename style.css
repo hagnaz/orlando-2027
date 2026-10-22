@@ -224,3 +224,22 @@ p { margin: 0 0 .5rem; }
 .tabela th { font-size: .82rem; color: var(--mudo); font-weight: 600; }
 .tabela tr.agora td { background: var(--destaque-suave); font-weight: 700; }
 .lista-preparo { margin: 0; padding-left: 18px; display: grid; gap: 8px; }
+
+/* Detalhe do dia */
+.detalhe-link { margin-bottom: 12px; display: inline-block; text-decoration: none; }
+.detalhe { display: grid; gap: 14px; }
+.detalhe > .cartao, .detalhe > .grade { margin: 0; }
+.linha-tempo { list-style: none; margin: 0; padding: 0; }
+.linha-tempo .bloco { display: grid; grid-template-columns: 5.6rem 1fr; gap: 10px; padding: 10px 0; border-bottom: 1px dashed var(--borda); }
+.linha-tempo .bloco:last-child { border-bottom: 0; }
+.linha-tempo .hora { font-weight: 700; font-variant-numeric: tabular-nums; font-size: .92rem; }
+.linha-tempo .titulo-bloco { font-weight: 700; }
+.linha-tempo .conteudo-bloco { min-width: 0; }
+.linha-tempo .conteudo-bloco p { margin: 2px 0 0; color: var(--mudo); font-size: .95rem; }
+.linha-tempo .tipo-pausa .titulo-bloco, .linha-tempo .tipo-refeicao .titulo-bloco { color: var(--ok); }
+.linha-tempo .tipo-show .titulo-bloco { color: var(--destaque); }
+.linha-tempo .tipo-logistica .titulo-bloco { color: var(--mudo); }
+.linha-tempo .atual { background: var(--destaque-suave); border-radius: 10px; padding-inline: 8px; }
+.etiqueta-agora { margin-left: 8px; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--destaque); }
+.agora-proximo { display: grid; gap: 8px; }
+@media (max-width: 420px) { .linha-tempo .bloco { grid-template-columns: 1fr; gap: 2px; } }

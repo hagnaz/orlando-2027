@@ -378,3 +378,31 @@ teste("S.proximaData: o mais cedo entre marcos futuros e prazos de pendências a
   igual(S.proximaData(marcos, pend, "2026-10-10"), { data: "2026-10-20", texto: "Ingressos", pendencia: false });
   igual(S.proximaData([], [], "2026-10-10"), null);
 });
+
+teste("L.lerBlocos agrupa por data, ordena e limpa campos", function () {
+  var r = L.lerBlocos([
+    ["data", "ordem", "hora", "fim", "tipo", "titulo", "texto", "link"],
+    ["2027-01-13", "2", "10:30", "11:30", "atracao", "Berk", "", "http://inseguro.com"],
+    ["2027-01-13", "1", "9h", "", "xyz", "Portão", "", "https://ok.com/a"],
+    ["2027-01-13", "3", "", "", "planob", "", "sem título", ""],
+    ["13/01/2027", "4", "12:00", "", "refeicao", "Almoço", "Berk", ""]
+  ]);
+  igual(r["2027-01-13"].map(function (b) { return [b.titulo, b.hora, b.tipo, b.link]; }),
+    [["Portão", "", "info", "https://ok.com/a"], ["Berk", "10:30", "atracao", ""], ["Almoço", "12:00", "refeicao", ""]]);
+  igual(L.lerBlocos([]), {});
+});
+
+teste("L.montarPublico anexa blocos ao dia (vazio sem aba)", function () {
+  var a = abasFixture();
+  igual(L.montarPublico(a, "x").roteiro[0].blocos, []);
+  a.blocos = [["data", "ordem", "hora", "fim", "tipo", "titulo", "texto", "link"], ["2027-01-12", "1", "09:00", "", "atracao", "Mario Kart", "", ""]];
+  var dia = L.montarPublico(a, "x").roteiro.filter(function (d) { return d.data === "2027-01-12"; })[0];
+  igual(dia.blocos.length, 1);
+});
+
+teste("SEED_BLOCOS: piloto 13/01 válido", function () {
+  var r = L.lerBlocos(SEED_BLOCOS);
+  igual(Object.keys(r), ["2027-01-13"]);
+  igual(r["2027-01-13"].length, SEED_BLOCOS.length - 1);
+  SEED_BLOCOS.slice(1).forEach(function (l) { verdade(["logistica", "atracao", "show", "refeicao", "pausa", "compras", "planob", "info"].indexOf(l[4]) >= 0, "tipo " + l[4]); });
+});

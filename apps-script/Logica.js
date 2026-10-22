@@ -65,12 +65,36 @@ var L = (function () {
     }).filter(Boolean);
   }
 
+  // Aba blocos: uma linha por bloco do detalhe do dia (data, ordem, hora, fim, tipo, titulo, texto, link)
+  var TIPOS_BLOCO = ["logistica", "atracao", "show", "refeicao", "pausa", "compras", "planob", "info"];
+  function lerBlocos(valores) {
+    var porData = {};
+    linhasParaObjetos(valores).forEach(function (b) {
+      var data = normalizarData(b.data), titulo = texto(b.titulo);
+      if (!data || !titulo) return;
+      var hora = /^\d{2}:\d{2}$/.test(texto(b.hora)) ? texto(b.hora) : "";
+      var fim = /^\d{2}:\d{2}$/.test(texto(b.fim)) ? texto(b.fim) : "";
+      var link = /^https:\/\/\S+$/.test(texto(b.link)) ? texto(b.link) : "";
+      (porData[data] = porData[data] || []).push({
+        ordem: +b.ordem || 999, hora: hora, fim: fim, tipo: TIPOS_BLOCO.indexOf(b.tipo) >= 0 ? b.tipo : "info",
+        titulo: titulo, texto: texto(b.texto), link: link
+      });
+    });
+    Object.keys(porData).forEach(function (d) {
+      porData[d].sort(function (a, b) { return a.ordem - b.ordem; });
+      porData[d].forEach(function (b) { delete b.ordem; });
+    });
+    return porData;
+  }
+
   function montarPublico(abas, agoraIso) {
     var cfg = lerConfig(abas.config);
+    var blocos = lerBlocos(abas.blocos);
     var roteiro = linhasParaObjetos(abas.roteiro).map(function (d) {
       return {
         data: normalizarData(d.data), titulo: d.titulo, tipo: d.tipo || "livre",
-        horarios: d.horarios, notas: d.notas, restaurante: d.restaurante, links: lerLinks(d.links)
+        horarios: d.horarios, notas: d.notas, restaurante: d.restaurante, links: lerLinks(d.links),
+        blocos: blocos[normalizarData(d.data)] || []
       };
     }).filter(function (d) { return d.data && d.titulo; })
       .sort(function (a, b) { return a.data < b.data ? -1 : a.data > b.data ? 1 : 0; });
@@ -208,7 +232,7 @@ var L = (function () {
   return {
     QUEM_VALIDOS: QUEM_VALIDOS,
     linhaParaObjeto: linhaParaObjeto, linhasParaObjetos: linhasParaObjetos,
-    normalizarData: normalizarData, montarPublico: montarPublico, lerLinks: lerLinks,
+    normalizarData: normalizarData, montarPublico: montarPublico, lerLinks: lerLinks, lerBlocos: lerBlocos,
     montarPrivado: montarPrivado, validarMarcacao: validarMarcacao,
     lerPessoas: lerPessoas, montarPessoal: montarPessoal, validarGravacao: validarGravacao, proximaOrdem: proximaOrdem, protegerTexto: protegerTexto
   };

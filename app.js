@@ -4,6 +4,7 @@
 (function () {
   var FUSO = "America/New_York";
   var ICONES = { parque: "🎢", descanso: "🏖️", viagem: "✈️", livre: "🛍️" };
+  var ICONES_BLOCO = { logistica: "🚐", atracao: "🎢", show: "🎆", refeicao: "🍽️", pausa: "🪑", compras: "🛍️" };
   var ICONES_RESERVA = { voo: "✈️", hospedagem: "🏠", carro: "🚐", restaurante: "🍽️", ingresso: "🎟️", seguro: "🩺", outro: "📌" };
   var QUEM = ["Vinicius", "Aline", "Daniel", "Cris", "Bia", "Valen"];
 
@@ -27,6 +28,13 @@
   function hoje() {
     var m = location.search.match(/[?&]hoje=(\d{4}-\d{2}-\d{2})/);
     return m ? m[1] : S.hojeIso(new Date(), FUSO);
+  }
+
+  function horaAgora() {
+    var m = location.search.match(/[?&]agora=(\d{2}:\d{2})/);
+    if (m) return m[1];
+    try { return new Date().toLocaleTimeString("pt-BR", { timeZone: FUSO, hour: "2-digit", minute: "2-digit", hour12: false }); }
+    catch (e) { return "00:00"; }
   }
 
   function dataHora(iso) {
@@ -116,6 +124,12 @@
       esquerda.push(el("section", { classe: "cartao heroi" }, [
         el("div", { classe: "rotulo", texto: "Dia " + n + " de " + total + " · " + S.formatarData(h) }),
         el("h1", { texto: dHoje ? (ICONES[dHoje.tipo] || "") + " " + dHoje.titulo : "Dia livre" })
+      ]));
+      var ap = dHoje ? agoraEProximo(dHoje.blocos, horaAgora()) : null;
+      if (ap && (ap.agora || ap.proximo)) esquerda.push(el("section", { classe: "cartao agora-proximo" }, [
+        ap.agora ? el("div", null, [el("div", { classe: "rotulo", texto: "Agora" }), el("h2", { texto: (ICONES_BLOCO[ap.agora.tipo] || "") + " " + ap.agora.titulo })]) : null,
+        ap.proximo ? el("div", null, [el("div", { classe: "rotulo", texto: "Próximo · " + ap.proximo.hora }), el("p", { texto: (ICONES_BLOCO[ap.proximo.tipo] || "") + " " + ap.proximo.titulo })]) : null,
+        el("a", { href: "#detalhe-" + dHoje.data, texto: "Ver o dia hora a hora →" })
       ]));
       if (dHoje) esquerda.push(el("section", { classe: "cartao" }, [el("div", { classe: "rotulo", texto: "Hoje" })].concat(blocoDia(dHoje))));
       if (amanha) esquerda.push(el("section", { classe: "cartao" }, [
@@ -207,7 +221,7 @@
           ]),
           el("span", { classe: "num", texto: "dia " + S.diaDaViagem(d.data, P.inicio) })
         ]),
-        el("div", { classe: "corpo" }, blocoDia(d).concat(
+        el("div", { classe: "corpo" }, [d.blocos && d.blocos.length ? el("a", { classe: "botao detalhe-link", href: "#detalhe-" + d.data, texto: "Ver o dia hora a hora →" }) : null].concat(blocoDia(d)).concat(
           !d.horarios && !d.notas && !d.restaurante && !(d.links && d.links.length) ? [el("p", { classe: "mudo", texto: "Sem detalhes ainda." })] : []))
       ]);
       if (d.data === h) det.open = true;
@@ -217,6 +231,67 @@
       el("h1", { texto: "Roteiro" }),
       el("p", { classe: "mudo", texto: S.formatarData(P.inicio) + " a " + S.formatarData(P.fim) + " · toque num dia para ver os detalhes" }),
       el("div", { classe: "grade grade-3" }, cartoes)
+    ]);
+  }
+
+  // ---------- Detalhe do dia ----------
+  // agora: último bloco com hora que já começou e não terminou; próximo: primeiro que ainda não começou
+  function agoraEProximo(blocos, hora) {
+    var comHora = (blocos || []).filter(function (b) { return b.hora && b.tipo !== "planob" && b.tipo !== "info"; });
+    if (!comHora.length) return null;
+    var agora = null, proximo = null;
+    comHora.forEach(function (b) {
+      if (b.hora <= hora && (!b.fim || hora < b.fim)) agora = b;
+      if (!proximo && b.hora > hora) proximo = b;
+    });
+    return { agora: agora, proximo: proximo };
+  }
+
+  function telaDetalhe(data) {
+    var P = estado.publico, d = diaPorData(data), h = hoje();
+    var voltar = el("p", null, [el("a", { href: "#roteiro", texto: "← Roteiro" })]);
+    if (!d) return el("div", null, [voltar, el("p", { classe: "mudo", texto: "Dia não encontrado." })]);
+    var blocos = d.blocos || [];
+    var infos = blocos.filter(function (b) { return b.tipo === "info"; });
+    var planos = blocos.filter(function (b) { return b.tipo === "planob"; });
+    var linha = blocos.filter(function (b) { return b.tipo !== "info" && b.tipo !== "planob"; });
+    var ap = data === h ? agoraEProximo(blocos, horaAgora()) : null;
+
+    function textoComLink(b) {
+      return [b.texto ? el("p", { texto: b.texto }) : null,
+        b.link ? el("a", { href: b.link, target: "_blank", rel: "noopener", texto: "Abrir link ↗" }) : null];
+    }
+
+    return el("div", { classe: "detalhe" }, [
+      voltar,
+      el("section", { classe: "cartao heroi" }, [
+        el("div", { classe: "rotulo", texto: "Dia " + S.diaDaViagem(d.data, P.inicio) + " · " + S.formatarData(d.data) }),
+        el("h1", { texto: (ICONES[d.tipo] || "") + " " + d.titulo })
+      ]),
+      infos.length ? el("div", { classe: "grade grade-3" }, infos.map(function (b) {
+        return el("section", { classe: "cartao" }, [el("div", { classe: "rotulo", texto: b.titulo })].concat(textoComLink(b)));
+      })) : null,
+      linha.length ? el("section", { classe: "cartao" }, [
+        el("h2", { texto: "Hora a hora" }),
+        el("ol", { classe: "linha-tempo" }, linha.map(function (b) {
+          var atual = ap && ap.agora === b;
+          return el("li", { classe: "bloco tipo-" + b.tipo + (atual ? " atual" : "") }, [
+            el("div", { classe: "hora", texto: b.hora ? b.hora + (b.fim ? "–" + b.fim : "") : "" }),
+            el("div", { classe: "conteudo-bloco" }, [
+              el("div", { classe: "titulo-bloco" }, [el("span", { "aria-hidden": "true", texto: (ICONES_BLOCO[b.tipo] || "") + " " }), b.titulo,
+                atual ? el("span", { classe: "etiqueta-agora", texto: "agora" }) : null])
+            ].concat(textoComLink(b)))
+          ]);
+        }))
+      ]) : el("p", { classe: "mudo", texto: "Ainda sem hora a hora para este dia." }),
+      planos.length ? el("section", { classe: "cartao" }, [
+        el("h2", { texto: "Se der errado" }),
+        el("ul", { classe: "lista-preparo" }, planos.map(function (b) { return el("li", null, [el("b", { texto: b.titulo + ": " }), b.texto]); }))
+      ]) : null,
+      (d.links && d.links.length) || d.notas ? el("details", { classe: "cartao" }, [
+        el("summary", { texto: "Notas e links do roteiro" }),
+        el("div", null, blocoDia({ notas: d.notas, links: d.links, restaurante: d.restaurante }))
+      ]) : null
     ]);
   }
 
@@ -542,6 +617,7 @@
   // ---------- Roteamento ----------
   function rotaAtual() {
     var r = (location.hash || "#hoje").slice(1);
+    if (/^detalhe-\d{4}-\d{2}-\d{2}$/.test(r)) return "detalhe";
     return ["hoje", "roteiro", "pendencias", "preparo", "reservas"].indexOf(r) >= 0 ? r : "hoje";
   }
 
@@ -553,8 +629,9 @@
   function renderizar() {
     var rota = rotaAtual();
     Array.prototype.forEach.call(document.querySelectorAll(".nav a"), function (a) {
-      a.classList.toggle("ativa", a.getAttribute("data-rota") === rota);
-      if (a.getAttribute("data-rota") === rota) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
+      var ativa = a.getAttribute("data-rota") === (rota === "detalhe" ? "roteiro" : rota);
+      a.classList.toggle("ativa", ativa);
+      if (ativa) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
     });
     if (rota === "reservas") {
       if (estado.privado) mostrarTela(telaRestrita());
@@ -563,7 +640,7 @@
       return;
     }
     if (!estado.publico) return;
-    mostrarTela(rota === "roteiro" ? telaRoteiro() : rota === "pendencias" ? telaPendencias() : rota === "preparo" ? telaPreparo() : telaHoje());
+    mostrarTela(rota === "detalhe" ? telaDetalhe(location.hash.slice(9)) : rota === "roteiro" ? telaRoteiro() : rota === "pendencias" ? telaPendencias() : rota === "preparo" ? telaPreparo() : telaHoje());
     if (rota === "roteiro") {
       var alvo = document.getElementById("dia-" + hoje());
       if (alvo) alvo.scrollIntoView({ block: "center" });

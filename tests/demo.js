@@ -2,7 +2,7 @@
 var DEMO = {
   publico: L.montarPublico({
     roteiro: SEED_PUBLICO.roteiro, pendencias: SEED_PUBLICO.pendencias,
-    reservas: [["ordem"]], config: SEED_PUBLICO.config
+    reservas: [["ordem"]], config: SEED_PUBLICO.config, blocos: SEED_BLOCOS
   }, new Date().toISOString()),
   privado: {
     ok: true,
