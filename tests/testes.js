@@ -400,10 +400,10 @@ teste("L.montarPublico anexa blocos ao dia (vazio sem aba)", function () {
   igual(dia.blocos.length, 1);
 });
 
-teste("SEED_BLOCOS: 13 e 14/01 válidos, sem horário encavalado", function () {
+teste("SEED_BLOCOS: dias válidos, sem horário encavalado", function () {
   var r = L.lerBlocos(SEED_BLOCOS);
-  igual(Object.keys(r).sort(), ["2027-01-13", "2027-01-14"]);
-  igual(r["2027-01-13"].length + r["2027-01-14"].length, SEED_BLOCOS.length - 1);
+  igual(Object.keys(r).sort(), ["2027-01-13", "2027-01-14", "2027-01-15", "2027-01-18"]);
+  igual(Object.keys(r).reduce(function (n, d) { return n + r[d].length; }, 0), SEED_BLOCOS.length - 1);
   Object.keys(r).forEach(function (d) {
     var h = r[d].filter(function (b) { return b.hora; });
     for (var i = 1; i < h.length; i++) verdade(h[i].hora >= (h[i - 1].fim || h[i - 1].hora), d + " " + h[i].titulo);
