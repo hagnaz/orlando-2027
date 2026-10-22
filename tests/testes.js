@@ -402,7 +402,7 @@ teste("L.montarPublico anexa blocos ao dia (vazio sem aba)", function () {
 
 teste("SEED_BLOCOS: dias válidos, sem horário encavalado", function () {
   var r = L.lerBlocos(SEED_BLOCOS);
-  igual(Object.keys(r).sort(), ["2027-01-13", "2027-01-14", "2027-01-15", "2027-01-18"]);
+  igual(Object.keys(r).sort(), ["2027-01-13", "2027-01-14", "2027-01-15", "2027-01-18", "2027-01-19", "2027-01-20", "2027-01-22", "2027-01-23", "2027-01-24"]);
   igual(Object.keys(r).reduce(function (n, d) { return n + r[d].length; }, 0), SEED_BLOCOS.length - 1);
   Object.keys(r).forEach(function (d) {
     var h = r[d].filter(function (b) { return b.hora; });
