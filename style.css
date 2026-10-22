@@ -65,7 +65,7 @@ p { margin: 0 0 .5rem; }
 
 .nav {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
-  display: grid; grid-template-columns: repeat(4, 1fr);
+  display: grid; grid-template-columns: repeat(5, 1fr);
   height: calc(var(--nav-altura) + env(safe-area-inset-bottom, 0px));
   padding-bottom: env(safe-area-inset-bottom, 0px);
   background: var(--superficie); border-top: 1px solid var(--borda);
@@ -216,3 +216,11 @@ p { margin: 0 0 .5rem; }
 .area > * + * { margin-top: 12px; }
 .links-dia { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
 .links-dia a { text-decoration: none; }
+
+/* Preparo */
+.tabela-rolagem { overflow-x: auto; }
+.tabela { border-collapse: collapse; width: 100%; min-width: 420px; font-variant-numeric: tabular-nums; }
+.tabela th, .tabela td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--borda); }
+.tabela th { font-size: .82rem; color: var(--mudo); font-weight: 600; }
+.tabela tr.agora td { background: var(--destaque-suave); font-weight: 700; }
+.lista-preparo { margin: 0; padding-left: 18px; display: grid; gap: 8px; }

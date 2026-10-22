@@ -99,6 +99,12 @@
         el("h2", { texto: marco.texto }),
         el("p", { classe: "mudo", texto: S.formatarData(marco.data) + " · em " + S.diasAte(h, marco.data) + " dias" })
       ]));
+      var sem = semanaPreparo(h);
+      if (sem) esquerda.push(el("section", { classe: "cartao" }, [
+        el("div", { classe: "rotulo", texto: "Preparo · semana " + sem.n + " de " + PREPARO.semanas.length }),
+        el("h2", { texto: "Caminhada longa: " + sem.caminhada }),
+        el("p", { classe: "mudo" }, ["Média de " + sem.passos + " passos por dia · ", el("a", { href: "#preparo", texto: "ver o preparo" })])
+      ]));
       var primeiro = diaPorData(P.inicio);
       if (primeiro) esquerda.push(el("section", { classe: "cartao" }, [
         el("div", { classe: "rotulo", texto: "Dia 1 · " + S.formatarData(primeiro.data) }),
@@ -134,6 +140,57 @@
       ]));
     }
     return el("div", { classe: "colunas" }, [el("div", null, esquerda), el("div", null, direita)]);
+  }
+
+  // ---------- Preparo ----------
+  function semanaPreparo(h) {
+    var lista = PREPARO.semanas, atual = null;
+    lista.forEach(function (w, i) { if (h >= w[0]) atual = { n: i + 1, inicio: w[0], caminhada: w[1], passos: w[2] }; });
+    return atual && S.diasAte(atual.inicio, h) < 7 ? atual : null;
+  }
+
+  function listaSimples(itens) { return el("ul", { classe: "lista-preparo" }, itens.map(function (t) { return el("li", { texto: t }); })); }
+
+  function telaPreparo() {
+    var h = hoje(), sem = semanaPreparo(h);
+    var tabela = el("div", { classe: "tabela-rolagem" }, [el("table", { classe: "tabela" }, [
+      el("thead", null, [el("tr", null, ["Semana", "Início", "Caminhada longa (fim de semana)", "Passos por dia"].map(function (t) { return el("th", { texto: t }); }))]),
+      el("tbody", null, PREPARO.semanas.map(function (w, i) {
+        var agora = sem && sem.n === i + 1;
+        return el("tr", { classe: agora ? "agora" : "" }, [
+          el("td", { texto: String(i + 1) + (agora ? " · agora" : "") }), el("td", { texto: S.formatarData(w[0]) }),
+          el("td", { texto: w[1] }), el("td", { texto: w[2] })]);
+      }))
+    ])]);
+    return el("div", null, [
+      el("section", { classe: "cartao" }, [
+        el("div", { classe: "rotulo", texto: "Preparo para os parques" }),
+        el("h1", { texto: sem ? "Semana " + sem.n + ": caminhada de " + sem.caminhada : "Aguentar 14 dias de parque" }),
+        el("p", { texto: PREPARO.porque })
+      ]),
+      el("section", { classe: "cartao" }, [
+        el("h2", { texto: "Caminhada" }),
+        el("p", { classe: "mudo", texto: "Uma caminhada longa no fim de semana, com o tênis da viagem, e a média de passos no dia a dia (o celular conta)." }),
+        tabela
+      ]),
+      el("div", { classe: "grade" }, [
+        el("section", { classe: "cartao" }, [
+          el("h2", { texto: "Exercícios de casa" }),
+          el("p", { classe: "mudo", texto: "2 vezes por semana, uns 10 minutos, sem academia." }),
+          el("ul", { classe: "lista-preparo" }, PREPARO.exercicios.map(function (e) {
+            return el("li", null, [el("b", { texto: e[0] + " · " + e[1] }), el("br"), e[2]]);
+          }))
+        ]),
+        el("section", { classe: "cartao" }, [el("h2", { texto: "Pés e tênis" }), listaSimples(PREPARO.pes)]),
+        el("section", { classe: "cartao" }, [el("h2", { texto: "No parque" }), listaSimples(PREPARO.parque)]),
+        el("section", { classe: "cartao" }, [
+          el("h2", { texto: "Crianças e cuidados" }),
+          el("p", { texto: PREPARO.criancas }),
+          el("p", { classe: "mudo", texto: PREPARO.cuidado })
+        ])
+      ]),
+      el("p", { classe: "mudo" }, ["Os itens do preparo também estão no seu checklist da ", el("a", { href: "#reservas", texto: "área restrita" }), "."])
+    ]);
   }
 
   // ---------- Roteiro ----------
@@ -485,7 +542,7 @@
   // ---------- Roteamento ----------
   function rotaAtual() {
     var r = (location.hash || "#hoje").slice(1);
-    return ["hoje", "roteiro", "pendencias", "reservas"].indexOf(r) >= 0 ? r : "hoje";
+    return ["hoje", "roteiro", "pendencias", "preparo", "reservas"].indexOf(r) >= 0 ? r : "hoje";
   }
 
   function mostrarTela(no) {
@@ -506,7 +563,7 @@
       return;
     }
     if (!estado.publico) return;
-    mostrarTela(rota === "roteiro" ? telaRoteiro() : rota === "pendencias" ? telaPendencias() : telaHoje());
+    mostrarTela(rota === "roteiro" ? telaRoteiro() : rota === "pendencias" ? telaPendencias() : rota === "preparo" ? telaPreparo() : telaHoje());
     if (rota === "roteiro") {
       var alvo = document.getElementById("dia-" + hoje());
       if (alvo) alvo.scrollIntoView({ block: "center" });

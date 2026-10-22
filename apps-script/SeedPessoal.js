@@ -10,7 +10,8 @@ var SP = (function () {
     ["Eletrônicos", ["Carregador", "Power bank", "Adaptador de tomada", "eSIM ou chip ativado"]],
     ["Parques", ["App My Disney Experience com ingresso vinculado", "App Universal com ingresso vinculado", "Capa de chuva", "Tênis confortável já usado"]],
     ["Mala", ["Roupas pra 16 dias (tem lavadora na casa)", "Casaco leve (manhãs de janeiro ~10 °C)", "Roupa de banho", "Necessaire"]],
-    ["Dinheiro", ["Cartão internacional ou conta global", "Um pouco de dólar em espécie"]]
+    ["Dinheiro", ["Cartão internacional ou conta global", "Um pouco de dólar em espécie"]],
+    ["Preparo", ["Tênis da viagem em uso desde novembro", "Caminhada longa de 2h feita", "Meia sem costura (2 pares extras)", "Kit de bolha na mochila"]]
   ];
   var EXTRAS = {
     Vinicius: [["Documentos", "Voucher Care Plus Travel (a partir de 05/01)"], ["Saúde", "Receita do Mounjaro em inglês"],
