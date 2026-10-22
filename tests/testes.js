@@ -400,9 +400,13 @@ teste("L.montarPublico anexa blocos ao dia (vazio sem aba)", function () {
   igual(dia.blocos.length, 1);
 });
 
-teste("SEED_BLOCOS: piloto 13/01 válido", function () {
+teste("SEED_BLOCOS: 13 e 14/01 válidos, sem horário encavalado", function () {
   var r = L.lerBlocos(SEED_BLOCOS);
-  igual(Object.keys(r), ["2027-01-13"]);
-  igual(r["2027-01-13"].length, SEED_BLOCOS.length - 1);
+  igual(Object.keys(r).sort(), ["2027-01-13", "2027-01-14"]);
+  igual(r["2027-01-13"].length + r["2027-01-14"].length, SEED_BLOCOS.length - 1);
+  Object.keys(r).forEach(function (d) {
+    var h = r[d].filter(function (b) { return b.hora; });
+    for (var i = 1; i < h.length; i++) verdade(h[i].hora >= (h[i - 1].fim || h[i - 1].hora), d + " " + h[i].titulo);
+  });
   SEED_BLOCOS.slice(1).forEach(function (l) { verdade(["logistica", "atracao", "show", "refeicao", "pausa", "compras", "planob", "info"].indexOf(l[4]) >= 0, "tipo " + l[4]); });
 });
